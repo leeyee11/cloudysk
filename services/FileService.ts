@@ -94,28 +94,29 @@ export const cp = async (source: string, target: string) => {
   }
 }
 
-export const mv = async (source: string, target: string) => {
+export const mv = async (source: string, target: string, rename = false) => {
   const absSourcePath = source && toAbsPath(source);
   let absTargetPath = target && toAbsPath(target);
   const pathExists = !!absSourcePath && !!absTargetPath && await Promise.all([
     fs.pathExists(absSourcePath), 
-    fs.pathExists(absTargetPath)
+    rename || fs.pathExists(absTargetPath)
   ]).then(existsList => existsList.every(exists => !!exists));
-  const access = pathExists && hasAccess(absSourcePath) && hasAccess(absTargetPath);
+  const access = pathExists && hasAccess(absSourcePath) && (rename || hasAccess(absTargetPath));
   if (!access) {
     throw new Error(`No permission on location: ${absSourcePath} or ${absTargetPath}.`);
   }
   const sourceStats = await fs.stat(absSourcePath);
-  const targetStats = await fs.stat(absTargetPath);
   if (!sourceStats.isDirectory()) {
-    if (targetStats.isDirectory()) {
+    if (!rename && (await fs.stat(absTargetPath)).isDirectory()) {
       const fileName = p.basename(absSourcePath);
       absTargetPath = p.resolve(absTargetPath, fileName);
     }
     await fs.move(absSourcePath, absTargetPath, { overwrite: true });
-  } else if (sourceStats.isDirectory() && targetStats.isDirectory()) {
-    const folderName = p.basename(absSourcePath);
-    absTargetPath = p.resolve(absTargetPath, folderName);
+  } else if (sourceStats.isDirectory()) {
+    if (!rename && (await fs.stat(absTargetPath)).isDirectory()) {
+      const folderName = p.basename(absSourcePath);
+      absTargetPath = p.resolve(absTargetPath, folderName);
+    }
     await fs.ensureDir(absTargetPath);
     await fs.move(absSourcePath, absTargetPath, { overwrite: true });
   } else {

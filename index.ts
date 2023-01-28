@@ -103,8 +103,9 @@ router.post("/api/v1/copy", async (ctx, next) => {
 router.post("/api/v1/move", async (ctx, next) => {
   const source = ctx.request.query.source as string;
   const target = ctx.request.query.target as string;
+  const rename = ctx.request.query.rename === "true";
   try {
-    await mv(source, target);
+    await mv(source, target, rename);
     ctx.body = { success: true }
     ctx.status = HttpStatus.OK;
   } catch (e) {
