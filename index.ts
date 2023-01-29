@@ -2,7 +2,7 @@ import Koa from "koa";
 import Router from "koa-router";
 import { koaBody, } from "koa-body";
 import HttpStatus from "http-status";
-import { cp, mv, dir, touch, mkdir, read, rm, scp } from "./services/FileService";
+import { cp, mv, dir, touch, mkdir, read, rm, scp, stat } from "./services/FileService";
 import httpStatus from "http-status";
 import path from 'path';
 import type formiable from "formidable";
@@ -40,11 +40,12 @@ router.get("/api/v1/file", async (ctx, next) => {
   await next();
 })
 
-router.get("/api/v1/fileList", async (ctx, next) => {
+router.get("/api/v1/folder", async (ctx, next) => {
   const path = ctx.request.query.path as string;
   try {
-    const fileList = await dir(path);
-    ctx.body = {success: true, data: fileList }
+    const children = await dir(path);
+    const fileStat = await stat(path);
+    ctx.body = {success: true, data: { ...fileStat, children } }
     ctx.status = HttpStatus.OK;
   } catch (e) {
     ctx.status = HttpStatus.OK;

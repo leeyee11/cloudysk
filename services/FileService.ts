@@ -36,17 +36,32 @@ export const dir = async (path: string) => {
   const dirList: string[] = await fs.readdir(absPath);
   const dirListStatsInfo: FileStats[] = await Promise.all(
     dirList.map(async (dir: string) => {
-      const stats = await fs.stat(p.resolve(absPath, dir));
-      stats.isFile
+      const stat = await fs.stat(p.resolve(absPath, dir));
       return { 
-        ...stats, 
-        isFile: stats.isFile(),
-        isDirectory: stats.isDirectory(),
+        ...stat, 
+        isFile: stat.isFile(),
+        isDirectory: stat.isDirectory(),
         name: dir
       }
     })
   );
   return dirListStatsInfo;
+}
+
+export const stat = async (path: string) => {
+  const absPath = path ? toAbsPath(path) : BASE_PATH;
+  const pathExists = await fs.pathExists(absPath);
+  const access = absPath && pathExists && hasAccess(absPath);
+  if (!access) {
+    throw new Error("No permission");
+  }
+  const stat = await fs.stat(absPath);
+  return { 
+    ...stat, 
+    isFile: stat.isFile(),
+    isDirectory: stat.isDirectory(),
+    name: p.basename(absPath)
+  }
 }
 
 export const touch = async (path: string) => {
