@@ -16,6 +16,16 @@ const toAbsPath = (path: string) => {
   return path && p.resolve(BASE_PATH, `./${path}`);
 }
 
+export const read = async (path: string) => {
+  const absPath = path ? toAbsPath(path) : BASE_PATH;
+  const pathExists = await fs.pathExists(absPath);
+  const access = absPath && pathExists && hasAccess(absPath);
+  if (!access) {
+    throw new Error("No permission");
+  }
+  return fs.createReadStream(absPath);
+}
+
 export const dir = async (path: string) => {
   const absPath = path ? toAbsPath(path) : BASE_PATH;
   const pathExists = await fs.pathExists(absPath);
@@ -86,9 +96,11 @@ export const cp = async (source: string, target: string) => {
   if (sourceStats.isDirectory()) {
     await fs.cp(absSourcePath, absTargetPath, { recursive: true }, (err) => console.error(err))
   } else {
-    if (targetStats.isDirectory()) {
-      const fileName = p.basename(absSourcePath);
-      absTargetPath = p.resolve(absTargetPath, fileName);
+    const fileName = p.basename(absSourcePath);
+    absTargetPath = p.resolve(absTargetPath, fileName);
+    const targetExists = await fs.pathExists(absTargetPath);
+    if (targetExists) {
+      throw new Error(`Target file already exists`);
     }
     await fs.copyFile(absSourcePath, absTargetPath, (err) => console.error(err));
   }
@@ -104,6 +116,10 @@ export const mv = async (source: string, target: string, rename = false) => {
   const access = pathExists && hasAccess(absSourcePath) && (rename || hasAccess(absTargetPath));
   if (!access) {
     throw new Error(`No permission on location: ${absSourcePath} or ${absTargetPath}.`);
+  }
+  const renameTargetExists = rename && await fs.pathExists(absTargetPath);
+  if (renameTargetExists) {
+    throw new Error(`Target file already exists`);
   }
   const sourceStats = await fs.stat(absSourcePath);
   if (!sourceStats.isDirectory()) {

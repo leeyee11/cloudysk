@@ -1,13 +1,13 @@
 import Koa from "koa";
 import Router from "koa-router";
-import mount from "koa-mount";
-import logger from "koa-logger";
 import { koaBody, } from "koa-body";
-import serve from "koa-static";
 import HttpStatus from "http-status";
-import { cp, mv, dir, touch, mkdir, rm, scp } from "./services/FileService";
+import { cp, mv, dir, touch, mkdir, read, rm, scp } from "./services/FileService";
 import httpStatus from "http-status";
+import path from 'path';
 import type formiable from "formidable";
+
+const p = path;
 
 const app = new Koa();
 // const client = new Koa();
@@ -23,6 +23,22 @@ app.use(koaBody({
   }
 }));
 // app.use(mount("/", client));
+
+router.get("/api/v1/file", async (ctx, next) => {
+  const path = ctx.request.query.path as string;
+  try {
+    const fileName = p.basename(path);
+    const file = await read(path);
+    ctx.response.headers["Content-Type"] = "application/force-download";
+    ctx.response.headers['Content-disposition'] = 'attachment; filename=' + fileName;
+    ctx.body = file;
+    ctx.status = HttpStatus.OK;
+  } catch (e) {
+    ctx.status = HttpStatus.OK;
+    ctx.body = { success: false, errorMessage: (e as Error).message, data: []}
+  }
+  await next();
+})
 
 router.get("/api/v1/fileList", async (ctx, next) => {
   const path = ctx.request.query.path as string;
@@ -79,11 +95,11 @@ router.put("/api/v1/files", async (ctx, next) => {
       ctx.status = HttpStatus.OK;
     } else {
       ctx.body = { success: false, errorMessage: "Failed to upload some files" }
-      ctx.status = httpStatus.EXPECTATION_FAILED;
+      ctx.status = httpStatus.OK;
     }
   } catch (e) {
     ctx.body = { success: false, errorMessage: (e as Error).message }
-    ctx.status = httpStatus.EXPECTATION_FAILED;
+    ctx.status = httpStatus.OK;
   }
 })
 
@@ -96,7 +112,7 @@ router.post("/api/v1/copy", async (ctx, next) => {
     ctx.status = HttpStatus.OK;
   } catch (e) {
     ctx.body = { success: false, errorMessage: (e as Error).message }
-    ctx.status = httpStatus.EXPECTATION_FAILED;
+    ctx.status = httpStatus.OK;
   }
 });
 
@@ -110,7 +126,7 @@ router.post("/api/v1/move", async (ctx, next) => {
     ctx.status = HttpStatus.OK;
   } catch (e) {
     ctx.body = { success: false, errorMessage: (e as Error).message }
-    ctx.status = httpStatus.EXPECTATION_FAILED;
+    ctx.status = httpStatus.OK;
   }
 });
 
@@ -122,7 +138,7 @@ router.delete("/api/v1/path", async (ctx, next) => {
     ctx.status = HttpStatus.OK;
   } catch (e) {
     ctx.body = { success: false, errorMessage: (e as Error).message }
-    ctx.status = httpStatus.EXPECTATION_FAILED;
+    ctx.status = httpStatus.OK;
   }
 })
 
