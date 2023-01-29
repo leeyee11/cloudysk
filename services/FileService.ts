@@ -155,6 +155,16 @@ export const mv = async (source: string, target: string, rename = false) => {
   }
 }
 
+export const write = async (path: string, data: any) => {
+  const absPath = path && toAbsPath(path);
+  const pathExists = absPath && await fs.pathExists(absPath);
+  const access = absPath && pathExists && hasAccess(absPath);
+  if (!access) {
+    throw new Error(`No permission on location: ${absPath}`);
+  }
+  return fs.writeFile(absPath, data);
+}
+
 export const scp = async (path: string, file: formiable.File) => {
   const absPath = path && toAbsPath(path);
   const pathExists = absPath && await fs.pathExists(absPath);

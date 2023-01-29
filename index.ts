@@ -2,7 +2,7 @@ import Koa from "koa";
 import Router from "koa-router";
 import { koaBody, } from "koa-body";
 import HttpStatus from "http-status";
-import { cp, mv, dir, touch, mkdir, read, rm, scp, stat } from "./services/FileService";
+import { cp, mv, dir, touch, mkdir, read, rm, scp, stat, write } from "./services/FileService";
 import httpStatus from "http-status";
 import path from 'path';
 import type formiable from "formidable";
@@ -56,8 +56,15 @@ router.get("/api/v1/folder", async (ctx, next) => {
 
 router.put("/api/v1/plain", async (ctx, next) => {
   const path = ctx.request.query.path as string;
+  const body = ctx.request.body as string;
   try {
-    const fileStat = await touch(path);
+    let fileStat;
+    if (!body) {
+      fileStat = await touch(path);
+    } else {  
+      await write(path, body);
+      fileStat = await stat(path);
+    }
     ctx.body = {success: true, data: fileStat }
     ctx.status = HttpStatus.OK;
   } catch (e) {
