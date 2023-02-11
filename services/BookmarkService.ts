@@ -120,11 +120,18 @@ export const getMarkers = async (payload: { path: string, user: string }) => {
   return results;
 }
 
-export const getCollection = async (payload: { collection: string, user: string }) => {
+export const getCollection = async (payload: { collection: string, category: string, user: string }) => {
   const realm = await connect(BookmarkSchema)
   const results = realm.objects<BookmarkRecord>(BOOKMARK)
-    .filter(value => value.collection === payload.collection && value.user === payload.user)
-    .map(convert)
+    .filter(value => (
+      value.collection === payload.collection &&
+      value.user === payload.user &&
+      (
+        payload.category 
+        ? payload.category === value.category 
+        : true
+      )
+    )).map(convert)
   return results;
 }
 
