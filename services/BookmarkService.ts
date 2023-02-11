@@ -3,15 +3,17 @@ import { BookmarkSchema } from "../schemas/Bookmark";
 
 const { UUID } = BSON;
 
+type BookmarkFileType = "file" | "directory";
+type BookmarkCollection = "star" | "audio" | "video";
+
 interface Bookmark {
   path: string,
-  type: "file" | "directory"
+  type: BookmarkFileType,
   user: string,
-  collection: "star" | "audio" | "video",
-  category: "default" | string,
+  collection: BookmarkCollection,
+  category: "default" | string, // custom category is only for audio
 }
 type BookmarkRecord = Bookmark & { _id: BSON.UUID };
-type BookmarkPayload = Partial<Bookmark> & { id: string, user: string };
 
 const BOOKMARK = "Bookmark"
 
@@ -53,11 +55,10 @@ export const create = async (payload: Bookmark) => {
     throw new Error('Alreay exists');
   }
   let result;
-  const nextId = new UUID();
   realm.write(() => {
     result = realm.create<BookmarkRecord>(
       BOOKMARK, {
-        _id: nextId,
+        _id: new UUID(),
         ...payload
       }
     )
@@ -68,30 +69,38 @@ export const create = async (payload: Bookmark) => {
   throw new Error('Failed to mark');
 }
 
-export const update = async (payload: BookmarkPayload) => {
+export const update = async (payload: { type: BookmarkFileType, collection: BookmarkCollection, path: string, categories: string[], user: string }) => {
   const realm = await connect(BookmarkSchema)
-  const target = realm.objects<BookmarkRecord>(BOOKMARK)
-    .find((value) => value._id.toHexString() === payload.id && value.user === payload.user );
-  if (target) {
+  const targets = realm.objects<BookmarkRecord>(BOOKMARK)
+    .filter((value) => value.path === payload.path && value.user === payload.user );
     realm.write(() => {
-      payload.type && (target.type = payload.type);
-      payload.path && (target.path = payload.path);
-      payload.user && (target.user = payload.user);
-      payload.collection && (target.collection = payload.collection);
-      payload.category && (target.category = payload.category);
-    })
-  }
-  if (target) {
-    return target;
-  } else {
-    throw new Error('Not found');
-  }
+      if (targets.length) {
+        realm.delete(targets);
+      }
+      for (const category of payload.categories) {
+        realm.create<BookmarkRecord>(
+          BOOKMARK, {
+            _id: new UUID(),
+            path: payload.path,
+            type: payload.type,
+            user: payload.user,
+            category: category,
+            collection: payload.collection
+          }
+        );
+      }
+  })
 }
 
-export const remove = async (payload: { id: string, user: string }) => {
+export const remove = async (payload: { path: string, collection: string, category: string, user: string }) => {
   const realm = await connect(BookmarkSchema)
   let target = realm.objects<BookmarkRecord>(BOOKMARK)
-    .find((value) => (value._id.toHexString() === payload.id && value.user === payload.user));
+    .find((value) => (
+      value.path === payload.path &&
+      value.collection === payload.collection &&
+      value.category === payload.category &&
+      value.user === payload.user
+    ));
   if (!target) {
     throw new Error('Not found');
   }
@@ -117,6 +126,14 @@ export const getCollection = async (payload: { collection: string, user: string 
     .filter(value => value.collection === payload.collection && value.user === payload.user)
     .map(convert)
   return results;
+}
+
+export const getCategories = async (payload: { user: string }) => {
+  const realm = await connect(BookmarkSchema)
+  const results = realm.objects<BookmarkRecord>(BOOKMARK)
+    .filter(value => value.collection === 'audio' && value.user === payload.user)
+    .map(value => value.category);
+  return [...new Set(['default', ...results])];
 }
 
 export const removePath = async (payload: { path: string, user: string }) => {
