@@ -3,7 +3,7 @@ import Router from 'koa-router';
 import { koaBody, } from 'koa-body';
 import HttpStatus from 'http-status';
 import { cp, mv, dir, touch, mkdir, read, rm, scp, stat, write } from './services/FileService';
-import { create, update, query, remove, getCollection, getMarkers, connect, removePath, renamePath } from './services/BookmarkService';
+import { create, update, query, remove, getCollection, getMarkers, connect, removePath, renamePath, getCategories } from './services/BookmarkService';
 import httpStatus from 'http-status';
 import path from 'path';
 import type formiable from 'formidable';
@@ -229,8 +229,11 @@ router.get('/api/v1/bookmarks', async (ctx, next) => {
 
 router.post('/api/v1/bookmark', async (ctx, next) => {
   try {
-    const payload = { ...ctx.request.body, user: DEFAULT_USER }
-    const result = await update(payload);
+    const collection = ctx.request.body.collection as 'star' | 'audio' | 'video';
+    const path = ctx.request.body.path as string;
+    const categories = ctx.request.body.categories as string[];
+    const type = ctx.request.body.type as 'file';
+    const result = await update({ type, collection, path, categories, user: DEFAULT_USER });
     ctx.body = { success: true, data: result }
     ctx.status = HttpStatus.OK;
   } catch (e) {
@@ -241,15 +244,29 @@ router.post('/api/v1/bookmark', async (ctx, next) => {
 
 router.delete('/api/v1/bookmark', async (ctx, next) => {
   try {
-    const id = ctx.request.query.id as string;
+    const path = ctx.request.query.path as string;
+    const collection = ctx.request.query.collection as string;
+    const category = ctx.request.query.category as string;
     const user = DEFAULT_USER;
-    await remove({ id, user });
+    await remove({ path, collection, category, user });
     ctx.body = { success: true}
     ctx.status = HttpStatus.OK;
   } catch (e) {
     ctx.body = { success: false, errorMessage: (e as Error).message }
     ctx.status = httpStatus.OK;
   }
+})
+
+router.get('/api/v1/categories', async (ctx, next) => {
+  try {
+    const collection = await getCategories({ user: DEFAULT_USER });
+    ctx.body = { success: true, data: collection }
+    ctx.status = HttpStatus.OK;
+  } catch (e) {
+    ctx.status = HttpStatus.OK;
+    ctx.body = { success: false, errorMessage: (e as Error).message, data: []}
+  }
+  await next();
 })
 
 app.use(router.routes()).use(router.allowedMethods());
