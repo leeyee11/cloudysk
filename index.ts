@@ -60,14 +60,15 @@ router.get('/api/v1/folder', async (ctx, next) => {
 })
 
 router.get('/api/v1/collection', async (ctx, next) => {
-  const name = ctx.request.query.name as string
+  const name = ctx.request.query.name as string;
+  const category = ctx.request.query.category as string;
   try {
-    const collection = await getCollection({ collection: name, user: DEFAULT_USER });
+    const collection = await getCollection({ collection: name, category, user: DEFAULT_USER });
     const children = await Promise.all(
-      collection.map(async ({ path }) => {
+      collection.map(async ({ path, collection, category }) => {
         try {
           const stats = await stat(path);
-          return ({...stats, parent: p.dirname(path) })
+          return ({...stats, parent: p.dirname(path), collection, category })
         } catch (err) {
           await removePath({ path, user: DEFAULT_USER });
           return null;
