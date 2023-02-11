@@ -106,4 +106,6 @@ dist
 # frontend code is in cloudysk-cloud.git
 frontend/
 
-data/
+data/*
+
+db/*
