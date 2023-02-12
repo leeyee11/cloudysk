@@ -1,5 +1,7 @@
 import Koa from 'koa';
 import Router from 'koa-router';
+import serve from 'koa-static';
+import mount from 'koa-mount';
 import { koaBody, } from 'koa-body';
 import HttpStatus from 'http-status';
 import { cp, mv, dir, touch, mkdir, read, rm, scp, stat, write } from './services/FileService';
@@ -11,10 +13,7 @@ import type formiable from 'formidable';
 const p = path;
 
 const app = new Koa();
-// const client = new Koa();
 const router = new Router();
-// serve frontend
-// client.use(serve(__dirname + './frontend/build'))
 
 // serve backend
 app.use(koaBody({ 
@@ -270,6 +269,8 @@ router.get('/api/v1/categories', async (ctx, next) => {
   await next();
 })
 
+// serve frontend
+app.use(mount( '/', serve('frontend/dist')));
 app.use(router.routes()).use(router.allowedMethods());
 
 app.listen(3000);

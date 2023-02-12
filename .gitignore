@@ -106,6 +106,10 @@ dist
 # frontend code is in cloudysk-cloud.git
 frontend/
 
+# data folder
 data/*
+!data/.gitkeep
 
+# database folder
 db/*
+!data/.gitkeep
