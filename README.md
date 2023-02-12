@@ -18,5 +18,10 @@ cd ..
 npm run start
 ```
 
+## Folders
+* frontend: it's used to host the frontend code, `cloudysk-frontend` project need to be cloned into this folder
+* db: it's used to store `realm` database local files
+* data: it's used to store the cloud files
+
 ## Usage
 Open `http://localhost:3000` in browser
