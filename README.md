@@ -7,15 +7,17 @@ A Node.js based file browser.
 git clone https://github.com/leeyee11/cloudysk.git
 cd cloudysk
 npm ci
+npm run build
 
 # Setup frontend
 git clone https://github.com/leeyee11/cloudysk-frontend.git frontend
+cd frontend
 npm ci
 npm run build
 cd ..
 
 # Start running
-npm run start
+node dist/index.js
 ```
 
 ## Folders

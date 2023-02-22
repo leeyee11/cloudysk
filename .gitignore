@@ -112,4 +112,4 @@ data/*
 
 # database folder
 db/*
-!data/.gitkeep
+!db/.gitkeep
