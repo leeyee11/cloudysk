@@ -9,5 +9,8 @@
     "strict": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-  }
+  },
+  "exclude": [
+    "frontend"
+  ]
 }
